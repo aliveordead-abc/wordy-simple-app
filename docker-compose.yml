@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: vocab_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vocab_app
+      POSTGRES_USER: vocab_user
+      POSTGRES_PASSWORD: change_me_vocab_password
+    volumes:
+      - vocab_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vocab_user -d vocab_app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./backend
+    container_name: vocab_api
+    restart: unless-stopped
+    env_file:
+      - /root/telegram-english-app-new/.env.production
+    environment:
+      DATABASE_URL: postgresql+asyncpg://vocab_user:change_me_vocab_password@db:5432/vocab_app
+      CSV_PATH: /app/data/words.csv
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+
+  nginx:
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    container_name: vocab_nginx
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /root/telegram-english-app-new/docker-letsencrypt:/etc/letsencrypt:ro
+
+volumes:
+  vocab_postgres_data:
