@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 
-type Tab = "learn" | "train" | "game" | "stats" | "profile";
+type Tab = "home" | "learn" | "game" | "stats" | "profile";
 type Level = "A1" | "A2" | "B1" | "B2" | "C1";
 type Feedback = "success" | "error" | null;
 type TrainingMode = "choice" | "match" | null;
 type ResultModal = "correct" | "wrong" | null;
-type ProfileScreen = "main" | "settings" | "categories" | "premium";
+type ProfileScreen = "main" | "settings" | "categories" | "premium" | "stats";
 type LearnRating = "unknown" | "known";
 
 type Word = {
@@ -164,11 +164,75 @@ const CACHE_KEY = "wordy_profile_cache_v3";
 const CHOICE_TRAINING_ROUNDS = 10;
 const TRAINING_ENCOURAGEMENTS = ["Отлично!", "Хорошая серия!", "Продолжаем!", "Почти!"];
 
-const NAV_ITEMS: Array<{ id: Tab; label: string; icon: string }> = [
-  { id: "train", label: "Главная", icon: "⌂" },
-  { id: "learn", label: "Учить", icon: "Уч" },
-  { id: "game", label: "Wordy", icon: "W" },
-  { id: "profile", label: "Профиль", icon: "Пр" },
+type MiniIconName =
+  | "home"
+  | "learn"
+  | "profile"
+  | "bolt"
+  | "fire"
+  | "star"
+  | "volume"
+  | "clock"
+  | "check"
+  | "x"
+  | "chevron"
+  | "back"
+  | "lock"
+  | "gem"
+  | "cards"
+  | "link"
+  | "grid"
+  | "chart"
+  | "target"
+  | "bell"
+  | "globe"
+  | "brain"
+  | "refresh"
+  | "trophy";
+
+function MiniIcon({ name }: { name: MiniIconName }) {
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.9,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    viewBox: "0 0 24 24",
+  } as const;
+  const paths: Record<MiniIconName, React.ReactNode> = {
+    home: <><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V20h14V9.5" /><path d="M9.5 20v-6h5v6" /></>,
+    learn: <><path d="M4 5.5A2 2 0 0 1 6 4h5v15H6a2 2 0 0 0-2 1.2z" /><path d="M20 5.5A2 2 0 0 0 18 4h-5v15h5a2 2 0 0 1 2 1.2z" /></>,
+    profile: <><circle cx="12" cy="8" r="3.4" /><path d="M5 20c.6-3.5 3.4-5.5 7-5.5s6.4 2 7 5.5" /></>,
+    bolt: <path d="M13 3 5 13h6l-1 8 8-10h-6z" />,
+    fire: <path d="M12 3c2 3 1 5-.5 6.5C10 11 9 12.5 9 14a3 3 0 0 0 6 0c0-1-.3-1.8-.7-2.5C16 12.8 17 15 17 16.5A5 5 0 1 1 7 16c0-3 2-4.5 2.5-7C10 6.5 11 5 12 3z" />,
+    star: <path d="M12 4l2.4 5 5.6.7-4 3.9 1 5.5L12 16l-5 2.9 1-5.5-4-3.9 5.6-.7z" />,
+    volume: <><path d="M4 9v6h4l5 4V5L8 9z" /><path d="M16 9a3 3 0 0 1 0 6" /><path d="M18.5 7a6 6 0 0 1 0 10" /></>,
+    clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>,
+    check: <path d="M5 12.5 10 17l9-10" />,
+    x: <path d="M6 6l12 12M18 6 6 18" />,
+    chevron: <path d="M9 5l7 7-7 7" />,
+    back: <path d="M15 5l-7 7 7 7" />,
+    lock: <><rect x="5" y="10.5" width="14" height="9.5" rx="2.2" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /></>,
+    gem: <><path d="M6 4h12l3 5-9 11L3 9z" /><path d="M3 9h18M9 4 7.5 9 12 20 16.5 9 15 4" /></>,
+    cards: <><rect x="3.5" y="7" width="13" height="13" rx="2.4" /><path d="M7.5 7V5.5A1.5 1.5 0 0 1 9 4h9a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 18 16h-1.5" /></>,
+    link: <><path d="M9.5 14.5 14.5 9.5" /><path d="M11 7l1.5-1.5a3.5 3.5 0 0 1 5 5L16 12" /><path d="M13 17l-1.5 1.5a3.5 3.5 0 0 1-5-5L8 12" /></>,
+    grid: <><rect x="4" y="4" width="7" height="7" rx="1.6" /><rect x="13" y="4" width="7" height="7" rx="1.6" /><rect x="4" y="13" width="7" height="7" rx="1.6" /><rect x="13" y="13" width="7" height="7" rx="1.6" /></>,
+    chart: <><path d="M4 20V4M4 20h16" /><path d="M8 16v-3M12 16v-7M16 16v-5" /></>,
+    target: <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="1" /></>,
+    bell: <><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2.5H4.5z" /><path d="M10 19a2 2 0 0 0 4 0" /></>,
+    globe: <><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.5 2.4 2.5 14.6 0 17M12 3.5c-2.5 2.4-2.5 14.6 0 17" /></>,
+    brain: <><path d="M9.5 4.5A2.5 2.5 0 0 0 7 7a2.5 2.5 0 0 0-1 4.8V14a3 3 0 0 0 3.5 3v2.5" /><path d="M14.5 4.5A2.5 2.5 0 0 1 17 7a2.5 2.5 0 0 1 1 4.8V14a3 3 0 0 1-3.5 3v2.5" /><path d="M9.5 4.5A2 2 0 0 1 12 3a2 2 0 0 1 2.5 1.5" /></>,
+    refresh: <><path d="M4 12a8 8 0 0 1 14-5.3L20 8" /><path d="M20 4v4h-4" /><path d="M20 12a8 8 0 0 1-14 5.3L4 16" /><path d="M4 20v-4h4" /></>,
+    trophy: <><path d="M7 4h10v4a5 5 0 0 1-10 0z" /><path d="M7 6H4.5a2.5 2.5 0 0 0 2.5 3M17 6h2.5a2.5 2.5 0 0 1-2.5 3" /><path d="M12 13v3M9 20h6M10 16h4l.5 4h-5z" /></>,
+  };
+  return <svg {...common}>{paths[name]}</svg>;
+}
+
+const NAV_ITEMS: Array<{ id: Tab; label: string; icon: MiniIconName }> = [
+  { id: "home", label: "Главная", icon: "home" },
+  { id: "learn", label: "Учить", icon: "learn" },
+  { id: "game", label: "Wordy", icon: "bolt" },
+  { id: "profile", label: "Профиль", icon: "profile" },
 ];
 
 function getTelegramInitData() {
@@ -186,6 +250,7 @@ async function waitForTelegramInitData() {
     const webApp = window.Telegram?.WebApp;
     if (webApp && !initialized) {
       try {
+        document.documentElement.classList.add("telegram-webapp");
         webApp.ready?.();
         webApp.expand?.();
       } catch {
@@ -414,7 +479,8 @@ function useTelegramBackButton(active: boolean, onBack: () => void) {
 }
 
 function App() {
-  const [tab, setTab] = useState<Tab>("learn");
+  const [tab, setTab] = useState<Tab>("home");
+  const [learnMode, setLearnMode] = useState<"menu" | "cards">("menu");
   const [categories, setCategories] = useState<Category[]>([]);
   const [me, setMe] = useState<Me | null>(() => {
     try {
@@ -430,10 +496,22 @@ function App() {
   const [pendingTab, setPendingTab] = useState<Tab | null>(null);
   const [gameResetNonce, setGameResetNonce] = useState(0);
   const [premiumCleanupNotice, setPremiumCleanupNotice] = useState("");
+  const [trainingFullscreen, setTrainingFullscreen] = useState(false);
+  const [profileFullscreen, setProfileFullscreen] = useState(false);
 
   const settings = me?.settings || { current_category: "", current_level: "A1" as Level, selected_category_ids: null };
   const subscription = me?.subscription || freeSubscription();
   const needsSetup = profileLoaded && (!settings.current_level || selectedCategoryIds(settings) === null);
+  const isLearnSession = tab === "learn" && learnMode === "cards";
+  const isGameSession = tab === "game";
+  const isTrainingSession = tab === "learn" && learnMode === "menu" && trainingFullscreen;
+  const isProfileNestedScreen = tab === "profile" && profileFullscreen;
+  const isFullscreenSession = isLearnSession || isTrainingSession || isGameSession || isProfileNestedScreen;
+  const shellClassName = [
+    "app-shell",
+    isLearnSession ? "learn-shell" : "",
+    isFullscreenSession ? "fullscreen-shell" : "root-tab-shell",
+  ].filter(Boolean).join(" ");
 
   function refreshMe() {
     return api<Me>("/me").then((profile) => {
@@ -474,6 +552,8 @@ function App() {
       setPendingTab(nextTab);
       return;
     }
+    setTrainingFullscreen(false);
+    setProfileFullscreen(false);
     setTab(nextTab);
   }
 
@@ -482,6 +562,22 @@ function App() {
     setGameActive(false);
     setTab(pendingTab || "learn");
     setPendingTab(null);
+  }
+
+  function handleSessionBack() {
+    if (isLearnSession) {
+      setLearnMode("menu");
+      return;
+    }
+    if (isTrainingSession) return;
+    if (isProfileNestedScreen) return;
+    if (isGameSession) {
+      if (gameActive) {
+        setPendingTab("learn");
+        return;
+      }
+      setTab("learn");
+    }
   }
 
   useEffect(() => {
@@ -516,6 +612,8 @@ function App() {
     return () => window.removeEventListener("popstate", onPopState);
   }, [gameActive, tab]);
 
+  useTelegramBackButton(isLearnSession || isGameSession, handleSessionBack);
+
   if (needsSetup) {
     return (
       <div className="app-shell setup-shell">
@@ -531,7 +629,7 @@ function App() {
   }
 
   return (
-    <div className={`app-shell ${tab === "learn" ? "learn-shell" : ""}`}>
+    <div className={shellClassName}>
       <header className="topbar">
         <div>
           <p className="eyebrow">Словарь на каждый день</p>
@@ -544,7 +642,20 @@ function App() {
       {premiumCleanupNotice && <div className="notice">{premiumCleanupNotice}</div>}
 
       <div className="screen" key={tab}>
-        {tab === "learn" && (
+        {tab === "home" && (
+          <HomeView
+            user={me?.user}
+            settings={settings}
+            subscription={subscription}
+            statsRefresh={statsRefresh}
+            onGoLearn={() => {
+              setLearnMode("cards");
+              setTab("learn");
+            }}
+            onGoPremium={() => setTab("profile")}
+          />
+        )}
+        {tab === "learn" && learnMode === "cards" && (
           <LearnView
             settings={settings}
             subscription={subscription}
@@ -554,7 +665,14 @@ function App() {
             onSubscriptionChanged={refreshSubscription}
           />
         )}
-        {tab === "train" && <TrainingView settings={settings} onNeedProfile={() => setTab("profile")} onGoLearn={() => setTab("learn")} />}
+        {tab === "learn" && learnMode === "menu" && (
+          <TrainingView
+            settings={settings}
+            onNeedProfile={() => setTab("profile")}
+            onGoLearn={() => setLearnMode("cards")}
+            onFullscreenChange={setTrainingFullscreen}
+          />
+        )}
         {tab === "game" && (
           <GameView
             settings={settings}
@@ -577,25 +695,29 @@ function App() {
             subscription={subscription}
             onSubscriptionChanged={refreshSubscription}
             onSave={updateSettings}
+            onFullscreenChange={setProfileFullscreen}
           />
         )}
       </div>
 
-      <nav className="bottom-nav" aria-label="Основная навигация">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            className={tab === item.id ? "active" : ""}
-            onClick={() => {
-              hapticTap();
-              requestTab(item.id);
-            }}
-          >
-            <span>{item.icon}</span>
-            {item.label}
-          </button>
-        ))}
-      </nav>
+      {!isFullscreenSession && (
+        <nav className="bottom-nav" aria-label="Основная навигация">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              className={tab === item.id ? "active" : ""}
+              onClick={() => {
+                hapticTap();
+                if (item.id === "learn") setLearnMode("menu");
+                requestTab(item.id);
+              }}
+            >
+              <span><MiniIcon name={item.icon} /></span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      )}
       <ConfirmExitGameModal open={pendingTab !== null} onExit={exitActiveGame} onStay={() => setPendingTab(null)} />
     </div>
   );
@@ -644,6 +766,139 @@ function ProgressBar({ value, label }: { value: number; label?: string }) {
         <div className="progress-fill" style={{ width: `${value}%` }} />
       </div>
     </div>
+  );
+}
+
+function HomeView({
+  user,
+  settings,
+  subscription,
+  statsRefresh,
+  onGoLearn,
+  onGoPremium,
+}: {
+  user?: TelegramUser;
+  settings: Settings;
+  subscription: Subscription;
+  statsRefresh: number;
+  onGoLearn: () => void;
+  onGoPremium: () => void;
+}) {
+  const [stats, setStats] = useState<Stats | null>(null);
+  useEffect(() => {
+    api<Stats>("/stats/me").then(setStats).catch(() => setStats(null));
+  }, [statsRefresh]);
+  const name = user?.first_name || "Wordy";
+  const usedToday = subscription.limits.learned_words?.used_today || 0;
+  const dailyLimit = subscription.limits.learned_words?.daily_limit ?? (subscription.is_premium ? null : 20);
+  const goalTotal = dailyLimit || 10;
+  const goalDone = dailyLimit ? Math.min(usedToday, dailyLimit) : Math.min(stats?.learned_words_count || 0, 10);
+  const goalPct = Math.min(100, Math.round((goalDone / goalTotal) * 100));
+  const learned = stats?.learned_words_count || 0;
+  const bestScore = stats?.best_score || 0;
+
+  return (
+    <main className="home-screen">
+      <section className="apphead">
+        <div>
+          <div className="eyebrow">Bilan davom etamiz</div>
+          <h1>Главная</h1>
+        </div>
+        {subscription.is_premium ? (
+          <span className="badge gold"><MiniIcon name="gem" />PRO</span>
+        ) : (
+          <div className="lvl">{settings.current_level}</div>
+        )}
+      </section>
+
+      <section className="card hero mb12">
+        <div className="row home-metrics-row">
+          <div className="statbar">
+            <span className="metric-icon gold"><MiniIcon name="fire" /></span>
+            <div>
+              <div className="kbd-w home-number">{bestScore || 0}</div>
+              <div className="muted3 home-caption">рекорд Wordy</div>
+            </div>
+          </div>
+          <div className="home-sep" />
+          <div className="statbar">
+            <span className="metric-icon lime"><MiniIcon name="star" /></span>
+            <div>
+              <div className="kbd-w home-number">{learned}</div>
+              <div className="muted3 home-caption">слов изучено</div>
+            </div>
+          </div>
+          <span className={`badge ${subscription.is_premium ? "lime" : "neutral"}`}>
+            {subscription.is_premium ? "∞ лимит" : `${learned} слов`}
+          </span>
+        </div>
+      </section>
+
+      <section className="card goal-card">
+        <div className="row">
+          <span className="ey">Цель на сегодня</span>
+          <span className="badge blue">{goalDone}/{goalTotal} слов</span>
+        </div>
+        <div className="row goal-body">
+          <Ring pct={goalPct} />
+          <div>
+            <div className="kbd-w goal-title">{goalDone === 0 ? `Salom, ${name}!` : "Так держать!"}</div>
+            <div className="muted goal-copy">{goalDone === 0 ? "Выучи 10 слов за несколько минут" : `Осталось ${Math.max(0, goalTotal - goalDone)} — это пара минут`}</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="card flat continue-card">
+        <div className="row">
+          <div>
+            <div className="ey">Продолжить</div>
+            <div className="h-card">{categorySummary(settings)}</div>
+          </div>
+          <span className="badge neutral">{settings.current_level}</span>
+        </div>
+        <div className="row progress-mini">
+          <span className="muted">Пройдено {learned} слов</span>
+          <span className="lime-text">{goalPct}%</span>
+        </div>
+        <ProgressBar value={goalPct} />
+        <button className="btn btn-primary full sm" onClick={onGoLearn}>Продолжить урок</button>
+      </section>
+
+      <section className="card hero word-day-card">
+        <div className="row">
+          <span className="badge lime">So'z kuni · Слово дня</span>
+          <button className="speak sm" aria-label="Произнести слово" onClick={() => pronounce("resilient")}><MiniIcon name="volume" /></button>
+        </div>
+        <div className="kbd-w word-day">resilient</div>
+        <div className="muted word-day-ipa">/rɪˈzɪlɪənt/ · adjective</div>
+        <div className="word-day-translation">устойчивый · bardoshli</div>
+      </section>
+
+      {!subscription.is_premium && (
+        <section className="card card-prem-upsell">
+          <div className="row">
+            <span className="badge gold"><MiniIcon name="gem" />Premium</span>
+            <span className="muted3 upsell-price">Telegram Stars</span>
+          </div>
+          <div className="h-card upsell-title">Безлимит и все категории</div>
+          <p className="muted upsell-copy">Снимаем дневной лимит, открываем все темы и игры.</p>
+          <button className="btn btn-gold full sm" onClick={onGoPremium}>Попробовать Premium</button>
+        </section>
+      )}
+    </main>
+  );
+}
+
+function Ring({ pct }: { pct: number }) {
+  const radius = 26;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - pct / 100);
+  return (
+    <svg width="64" height="64" viewBox="0 0 64 64" className="goal-ring">
+      <circle cx="32" cy="32" r={radius} fill="none" stroke="var(--line-2)" strokeWidth="7" />
+      <circle cx="32" cy="32" r={radius} fill="none" stroke="#C8F94D" strokeWidth="7" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset} transform="rotate(-90 32 32)" />
+      <text x="32" y="37" textAnchor="middle" fontFamily="Unbounded" fontWeight="800" fontSize="15" fill="var(--txt)">{pct}%</text>
+    </svg>
   );
 }
 
@@ -700,7 +955,7 @@ function LearningFlashcard({
         onClick={() => pronounce(word.english, () => setSpeaking(true), () => setSpeaking(false))}
         aria-label="Произнести слово"
       >
-        🔊
+        <MiniIcon name="volume" />
       </button>
     </section>
   );
@@ -867,9 +1122,26 @@ function LearnView({
   );
 }
 
-function TrainingView({ settings, onNeedProfile, onGoLearn }: { settings: Settings; onNeedProfile: () => void; onGoLearn: () => void }) {
+function TrainingView({
+  settings,
+  onNeedProfile,
+  onGoLearn,
+  onFullscreenChange,
+}: {
+  settings: Settings;
+  onNeedProfile: () => void;
+  onGoLearn: () => void;
+  onFullscreenChange: (fullscreen: boolean) => void;
+}) {
   const [mode, setMode] = useState<TrainingMode>(null);
   const { words, loading, message } = useWords(settings);
+
+  useEffect(() => {
+    onFullscreenChange(mode !== null);
+    return () => onFullscreenChange(false);
+  }, [mode, onFullscreenChange]);
+
+  useTelegramBackButton(mode !== null, () => setMode(null));
 
   if (selectedCategoryIds(settings) === null) {
     return <EmptySettings title="Тренировка" onNeedProfile={onNeedProfile} />;
@@ -879,37 +1151,57 @@ function TrainingView({ settings, onNeedProfile, onGoLearn }: { settings: Settin
 
   return (
     <main className="training-screen">
-      <section className="training-home-hero">
+      <section className="apphead">
         <div>
-          <p>Тренировка</p>
-          <h2>Мини-игры для ваших слов</h2>
-          <span>{categorySummary(settings)} · {settings.current_level}</span>
+          <div className="eyebrow">Mashqlar · Режимы</div>
+          <h1>Учить</h1>
         </div>
       </section>
+      <p className="muted learn-intro">Выбери, как сегодня закрепляем слова.</p>
       <section className="training-mode-grid">
+        <button className="training-mode-card blue" onClick={onGoLearn}>
+          <span className="training-card-icon"><MiniIcon name="cards" /></span>
+          <div>
+            <strong>Новые слова</strong>
+            <p>Карточки: смотри слово, проверяй себя, оценивай.</p>
+          </div>
+          <div className="training-card-meta">
+            <span><MiniIcon name="clock" />3 мин</span>
+            <span>{settings.current_level}</span>
+          </div>
+        </button>
         <button className="training-mode-card blue" disabled={loading || words.length < 4} onClick={() => setMode("choice")}>
-          <span className="training-card-icon">✓</span>
+          <span className="training-card-icon lime"><MiniIcon name="check" /></span>
           <div>
             <strong>Выбери перевод</strong>
             <p>Проверьте, насколько хорошо помните слова.</p>
           </div>
           <div className="training-card-meta">
-            <span>2 мин</span>
+            <span><MiniIcon name="clock" />2 мин</span>
             <span>Легко</span>
           </div>
-          <span className="training-start-button">Начать</span>
         </button>
         <button className="training-mode-card green" disabled={loading || words.length < 4} onClick={() => setMode("match")}>
-          <span className="training-card-icon">↔</span>
+          <span className="training-card-icon green"><MiniIcon name="link" /></span>
           <div>
             <strong>Соедини пары</strong>
             <p>Найдите правильные пары слов и переводов.</p>
           </div>
           <div className="training-card-meta">
-            <span>1 мин</span>
+            <span><MiniIcon name="clock" />2 мин</span>
             <span>Средне</span>
           </div>
-          <span className="training-start-button">Начать</span>
+        </button>
+        <button className="training-mode-card locked" disabled>
+          <span className="training-card-icon gold"><MiniIcon name="brain" /></span>
+          <div>
+            <strong>Сложные слова</strong>
+            <p>Только то, что даётся тебе труднее всего.</p>
+          </div>
+          <div className="training-card-meta">
+            <span><MiniIcon name="clock" />4 мин</span>
+            <span><MiniIcon name="lock" />Premium</span>
+          </div>
         </button>
       </section>
       {message && <p className="comfort-copy">{message}</p>}
@@ -1044,13 +1336,13 @@ function TranslationChoice({ words, loading, message, onBack, onGoLearn }: { wor
         <div className="training-word-row">
           <h2>{question.word.english}</h2>
           <button className={`speaker-button ${speaking ? "speaking" : ""}`} onClick={() => pronounce(question.word.english, () => setSpeaking(true), () => setSpeaking(false))} aria-label="Произнести слово">
-            🔊
+            <MiniIcon name="volume" />
           </button>
         </div>
         {question.word.transcription && <span>{question.word.transcription}</span>}
       </section>
       <div className="choice-options">
-        {question.options.map((option) => {
+        {question.options.map((option, index) => {
           const isCorrect = option === question.word.russian;
           const isSelected = feedback?.option === option;
           return (
@@ -1060,7 +1352,10 @@ function TranslationChoice({ words, loading, message, onBack, onGoLearn }: { wor
               disabled={Boolean(feedback)}
               onClick={() => choose(option)}
             >
+              <span className="choice-key">{String.fromCharCode(65 + index)}</span>
               {option}
+              {feedback && isCorrect && <span className="choice-mark" style={{color:"var(--green)"}}><MiniIcon name="check" /></span>}
+              {feedback && isSelected && !isCorrect && <span className="choice-mark" style={{color:"var(--red)"}}><MiniIcon name="x" /></span>}
             </button>
           );
         })}
@@ -1316,11 +1611,12 @@ function GameView({
     const messageText = accuracy >= 85 ? "Отличный результат!" : accuracy >= 65 ? "Очень хорошо!" : "Есть над чем поработать";
     return (
       <main>
-        <section className="result-hero">
+        <section className="result-hero" style={{textAlign:"center"}}>
+          <div className="result-trophy"><MiniIcon name="trophy" /></div>
           <p>Итоги игры</p>
+          <div className="result-score">{correctCount}</div>
           <h2>{messageText}</h2>
-          <strong>{correctCount}</strong>
-          <span>очков за 60 секунд</span>
+          <span className="muted">очков за 60 секунд</span>
         </section>
         <section className="score-grid">
           <MetricCard label="Вопросов" value={answers.length} tone="blue" />
@@ -1345,18 +1641,18 @@ function GameView({
 
   return (
     <main className="game-screen">
-      <section className="wordy-header-card">
+      <section className="apphead">
         <div>
-          <p className="eyebrow">Игра на скорость</p>
-          <h2>WORDY</h2>
-          <span>{categorySummary(settings)} · {settings.current_level}</span>
+          <div className="eyebrow">Tezlik o'yini · Игра на скорость</div>
+          <h1>Wordy</h1>
         </div>
+        <div className="lvl">{settings.current_level}</div>
       </section>
-      <section className="wordy-status-row">
-        <div><span>⏱</span><strong>{seconds}</strong></div>
-        <div><span>⭐</span><strong>{correctCount}</strong></div>
-        <div><span>🔥</span><strong>{streak}</strong></div>
-      </section>
+      <div className="mgrid">
+        <div className="mtile"><div className="ic"><MiniIcon name="clock" /></div><div className="v">{seconds}</div><div className="k">секунд</div></div>
+        <div className="mtile"><div className="ic" style={{color:"var(--lime)"}}><MiniIcon name="star" /></div><div className="v">{correctCount}</div><div className="k">очки</div></div>
+        <div className="mtile"><div className="ic" style={{color:"var(--gold)"}}><MiniIcon name="fire" /></div><div className="v">{streak}</div><div className="k">серия</div></div>
+      </div>
       {!subscription.is_premium && subscription.limits.wordy_games?.daily_limit !== null && (
         <p className="limit-copy">
           Бесплатно сегодня: {subscription.limits.wordy_games?.used_today || 0}/{subscription.limits.wordy_games?.daily_limit || 5} игр
@@ -1374,7 +1670,7 @@ function GameView({
           </button>
           {prompt && (
             <button className={`speaker-button ${gameSpeaking ? "speaking" : ""}`} onClick={() => pronounce(prompt.word.english, () => setGameSpeaking(true), () => setGameSpeaking(false))} aria-label="Произнести слово">
-              🔊
+              <MiniIcon name="volume" />
             </button>
           )}
         </div>
@@ -1387,7 +1683,7 @@ function GameView({
           <button className="danger-action game-answer-button" onClick={() => answer(false)}>Неверно</button>
         </div>
       ) : (
-        <button className="wide primary-action" disabled={loading || words.length < 2} onClick={() => void start()}>Начать игру</button>
+        <button className="btn lime-action wide lg" disabled={loading || words.length < 2} onClick={() => void start()}>Начать игру ✦</button>
       )}
     </main>
   );
@@ -1400,6 +1696,7 @@ function ProfileView({
   subscription,
   onSubscriptionChanged,
   onSave,
+  onFullscreenChange,
 }: {
   user?: TelegramUser;
   settings: Settings;
@@ -1407,6 +1704,7 @@ function ProfileView({
   subscription: Subscription;
   onSubscriptionChanged: () => Promise<Subscription>;
   onSave: (settings: Partial<Settings>) => Promise<void>;
+  onFullscreenChange: (fullscreen: boolean) => void;
 }) {
   const [draftCategories, setDraftCategories] = useState<string[]>(selectedCategoryIds(settings) || []);
   const [draftLevel, setDraftLevel] = useState<Level>(settings.current_level);
@@ -1428,7 +1726,21 @@ function ProfileView({
     api<Stats>("/stats/me").then(setProfileStats).catch(() => setProfileStats(null));
   }, []);
 
-  useTelegramBackButton(screen === "settings" || screen === "categories", () => setScreen(screen === "categories" ? "settings" : "main"));
+  useEffect(() => {
+    onFullscreenChange(screen !== "main");
+    return () => onFullscreenChange(false);
+  }, [screen, onFullscreenChange]);
+
+  useTelegramBackButton(screen !== "main" && screen !== "premium", () => {
+    if (screen === "categories") {
+      setScreen("settings");
+      return;
+    }
+    if (screen === "premium" && premiumPrompt) {
+      setPremiumPrompt(false);
+    }
+    setScreen("main");
+  });
 
   async function save() {
     setSaving(true);
@@ -1475,6 +1787,15 @@ function ProfileView({
     );
   }
 
+  if (screen === "stats") {
+    return (
+      <div>
+        <button className="quiet-action back-button" onClick={() => setScreen("main")}>Назад</button>
+        <StatsView refreshKey={0} subscription={subscription} />
+      </div>
+    );
+  }
+
   if (screen === "settings") {
     return (
       <main>
@@ -1515,35 +1836,41 @@ function ProfileView({
 
   return (
     <main className="profile-screen">
-      <section className="profile-hero-card">
+      <section className="apphead" style={{marginBottom:14}}>
+        <div><div className="eyebrow">Profil</div><h1>Профиль</h1></div>
+      </section>
+      <section className="profile-hero-card" style={subscription.is_premium ? {borderColor:"rgba(255,203,69,.24)"} : {}}>
         <div className="profile-avatar">
           {avatarUrl ? <img src={avatarUrl} alt="" /> : <span>{profileInitials(user)}</span>}
         </div>
         <div className="profile-hero-copy">
-          <p className="eyebrow">Wordy профиль</p>
+          <p className="eyebrow">Profil</p>
           <h2>{displayName}</h2>
-          <span>{user?.username ? `@${user.username}` : user ? `ID: ${user.telegram_id}` : "Проверяем данные Telegram"}</span>
-          <div className={`profile-status-pill ${subscription.is_premium ? "premium" : "free"}`}>
-            {subscription.is_premium ? "💎 Premium" : "⭐ Free"}
+          <span className="muted3" style={{fontSize:13,fontWeight:600}}>{user?.username ? `@${user.username}` : user ? `ID: ${user.telegram_id}` : ""}</span>
+          <div className="row" style={{gap:7,marginTop:8,flexWrap:"wrap"}}>
+            {subscription.is_premium
+              ? <span className="badge gold"><MiniIcon name="gem" />Premium</span>
+              : <span className="badge neutral">Free</span>}
+            <span className="badge blue">{settings.current_level}</span>
           </div>
         </div>
       </section>
 
       <section className="profile-summary-card">
-        <div className="summary-item hot">
-          <span>🔥</span>
-          <strong>0</strong>
-          <p>Learning Streak</p>
+        <div className="summary-item">
+          <div className="set-row-icon" style={{background:"rgba(255,203,69,.16)",color:"var(--gold)",margin:"0 auto 8px"}}><MiniIcon name="fire" /></div>
+          <strong>{profileStats?.games_played ?? "—"}</strong>
+          <p>Игр сыграно</p>
         </div>
-        <div className="summary-item blue">
-          <span>📚</span>
+        <div className="summary-item">
+          <div className="set-row-icon" style={{background:"rgba(200,249,77,.16)",color:"var(--lime)",margin:"0 auto 8px"}}><MiniIcon name="cards" /></div>
           <strong>{profileStats?.learned_words_count ?? "—"}</strong>
-          <p>Learned Words</p>
+          <p>Выучено</p>
         </div>
-        <div className="summary-item green">
-          <span>🎮</span>
+        <div className="summary-item">
+          <div className="set-row-icon" style={{background:"var(--blue-tint)",color:"var(--blue-soft)",margin:"0 auto 8px"}}><MiniIcon name="bolt" /></div>
           <strong>{profileStats?.best_score ?? "—"}</strong>
-          <p>Wordy Best Score</p>
+          <p>Рекорд</p>
         </div>
       </section>
 
@@ -1585,31 +1912,31 @@ function ProfileView({
       />
 
       <section className="profile-settings-card">
-        <div className="profile-section-heading">
-          <div>
-            <p className="eyebrow">Управление</p>
-            <h3>Настройки</h3>
-          </div>
-        </div>
+        <div className="ey mb12">Настройки</div>
         <button className="settings-list-row" onClick={() => setScreen("settings")}>
-          <span>🎯</span>
-          <div><strong>Level</strong><small>{settings.current_level} · {LEVEL_LABELS[settings.current_level]}</small></div>
-          <em>›</em>
+          <div className="set-row-icon"><MiniIcon name="target" /></div>
+          <div><strong>Уровень</strong><small>{settings.current_level} · {LEVEL_LABELS[settings.current_level]}</small></div>
+          <span className="chevron-icon"><MiniIcon name="chevron" /></span>
         </button>
         <button className="settings-list-row" onClick={() => setScreen("settings")}>
-          <span>✨</span>
-          <div><strong>Categories</strong><small>{categorySummary(settings)}</small></div>
-          <em>›</em>
+          <div className="set-row-icon" style={{background:"rgba(200,249,77,.16)",color:"var(--lime)"}}><MiniIcon name="grid" /></div>
+          <div><strong>Категории</strong><small>{categorySummary(settings)}</small></div>
+          <span className="chevron-icon"><MiniIcon name="chevron" /></span>
+        </button>
+        <button className="settings-list-row" onClick={() => setScreen("stats")}>
+          <div className="set-row-icon" style={{background:"rgba(55,217,160,.16)",color:"var(--green)"}}><MiniIcon name="chart" /></div>
+          <div><strong>Статистика</strong><small>Прогресс, точность и Wordy</small></div>
+          <span className="chevron-icon"><MiniIcon name="chevron" /></span>
         </button>
         <div className="settings-list-row disabled">
-          <span>🔔</span>
-          <div><strong>Notifications</strong><small>Скоро</small></div>
-          <em>›</em>
+          <div className="set-row-icon" style={{background:"rgba(255,203,69,.16)",color:"var(--gold)"}}><MiniIcon name="bell" /></div>
+          <div><strong>Уведомления</strong><small>Скоро</small></div>
+          <span className="chevron-icon"><MiniIcon name="chevron" /></span>
         </div>
         <div className="settings-list-row disabled">
-          <span>🌐</span>
-          <div><strong>Language</strong><small>Русский интерфейс</small></div>
-          <em>›</em>
+          <div className="set-row-icon" style={{background:"rgba(155,140,255,.16)",color:"var(--violet)"}}><MiniIcon name="globe" /></div>
+          <div><strong>Язык</strong><small>Русский интерфейс</small></div>
+          <span className="chevron-icon"><MiniIcon name="chevron" /></span>
         </div>
       </section>
     </main>
@@ -1618,35 +1945,28 @@ function ProfileView({
 
 function PremiumProfileCard({ subscription, onOpen }: { subscription: Subscription; onOpen: () => void }) {
   return (
-    <section className="profile-premium-card">
-      <div className="profile-section-heading">
-        <div>
-          <p className="eyebrow">Premium</p>
-          <h3>💎 Wordy Premium</h3>
-        </div>
-      </div>
+    <section className={`card ${subscription.is_premium ? "" : "card-prem-upsell"}`} style={subscription.is_premium ? {border:"1px solid rgba(255,203,69,.2)"} : {}}>
       {subscription.is_premium ? (
         <>
-          <div className="premium-status-list">
-            <p>Статус: <strong>Активен</strong></p>
-            {isAdminPremiumPlan(subscription.plan) ? (
-              <p><strong>Premium выдан администратором</strong></p>
-            ) : (
-              <p>Тариф: <strong>{planTariffLabel(subscription.plan)}</strong></p>
-            )}
-            <p>Действует до: <strong>{subscription.expires_at ? formatDate(subscription.expires_at) : "нет данных"}</strong></p>
+          <div className="row" style={{marginBottom:8}}>
+            <span className="badge gold"><MiniIcon name="gem" />Wordy Premium</span>
+            <span className="badge green" style={{marginLeft:"auto"}}>Активна</span>
           </div>
-          <button className="wide premium-action" onClick={onOpen}>Управление подпиской</button>
+          <p className="muted" style={{fontSize:13.5}}>
+            {isAdminPremiumPlan(subscription.plan)
+              ? <><b style={{color:"var(--txt)"}}>Admin Premium</b></>
+              : <>Тариф: <b style={{color:"var(--txt)"}}>{planTariffLabel(subscription.plan)}</b>{subscription.expires_at ? ` · до ${formatDate(subscription.expires_at)}` : ""}</>}
+          </p>
+          <button className="btn btn-outline wide sm" style={{marginTop:14}} onClick={onOpen}>Управление подпиской</button>
         </>
       ) : (
         <>
-          <ul className="premium-benefit-list">
-            <li>Безлимитные игры</li>
-            <li>Безлимитное изучение слов</li>
-            <li>Все категории</li>
-            <li>Расширенная статистика</li>
-          </ul>
-          <button className="wide premium-action" onClick={onOpen}>Оформить Premium</button>
+          <div className="row">
+            <span className="badge gold"><MiniIcon name="gem" />Premium</span>
+          </div>
+          <div className="h-card" style={{marginTop:10}}>Открой весь Wordy</div>
+          <p className="muted" style={{fontSize:13.5,margin:"6px 0 14px"}}>Безлимит, все категории и расширенная статистика.</p>
+          <button className="btn btn-gold wide sm" onClick={onOpen}>Получить Premium</button>
         </>
       )}
     </section>
@@ -2074,30 +2394,25 @@ function PremiumScreen({
   if (success || subscription.is_premium) {
     return (
       <main className="full-screen-view premium-screen">
-        <button className="quiet-action back-button" onClick={onBack}>Назад</button>
-        <section className="stats-hero premium-hero">
-          <div>
-            <p>Wordy Premium</p>
-            <h2>Подписка активна</h2>
-            <span>Статус Premium привязан к вашему Telegram аккаунту.</span>
+        <div className="row" style={{marginBottom:16}}>
+          <button className="quiet-action back-button" style={{marginBottom:0}} onClick={onBack}>Назад</button>
+          <span className="badge green" style={{marginLeft:"auto"}}>Подписка активна</span>
+        </div>
+        <div className="prem-hero-card mb12">
+          <span style={{color:"var(--gold)",width:48,height:48,display:"inline-flex",margin:"0 auto"}}><MiniIcon name="gem" /></span>
+          <div className="kbd-w" style={{fontWeight:800,fontSize:24,color:"var(--txt)",marginTop:8}}>Wordy Premium</div>
+          <div className="row" style={{justifyContent:"center",gap:8,marginTop:10,flexWrap:"wrap"}}>
+            <span className="badge gold">{isAdminPremiumPlan(displaySubscription.plan) ? "Admin" : planTariffLabel(displaySubscription.plan)}</span>
+            {displaySubscription.expires_at && <span className="badge neutral">до {formatDate(displaySubscription.expires_at)}</span>}
           </div>
-        </section>
-        <section className="premium-active-summary">
-          <p>Статус: <strong>Активен</strong></p>
-          {isAdminPremiumPlan(displaySubscription.plan) ? (
-            <p><strong>Premium выдан администратором</strong></p>
-          ) : (
-            <p>Тариф: <strong>{planTariffLabel(displaySubscription.plan)}</strong></p>
-          )}
-          <p>Действует до: <strong>{displaySubscription.expires_at ? formatDate(displaySubscription.expires_at) : "нет данных"}</strong></p>
-        </section>
-        <section className="premium-benefits">
-          <div><strong>Безлимитное обучение</strong><span>Без дневного ограничения на слова.</span></div>
-          <div><strong>Безлимитные игры</strong><span>Играйте в Wordy сколько хотите.</span></div>
-          <div><strong>Все категории</strong><span>Открыты все темы и расширенная статистика.</span></div>
-        </section>
-        <button className="wide quiet-action" disabled={busy} onClick={() => void cancelSubscription()}>
-          Отменить Premium
+        </div>
+        <div className="card mb12" style={{padding:"4px 18px"}}>
+          <div className="prem-feat"><div className="pi"><MiniIcon name="refresh" /></div><div style={{flex:1}}><div className="pt">Безлимитное обучение</div><div className="ps">Без дневного лимита слов</div></div><span className="check-ic"><MiniIcon name="check" /></span></div>
+          <div className="prem-feat"><div className="pi"><MiniIcon name="bolt" /></div><div style={{flex:1}}><div className="pt">Безлимитные игры</div><div className="ps">Wordy без ограничений</div></div><span className="check-ic"><MiniIcon name="check" /></span></div>
+          <div className="prem-feat"><div className="pi"><MiniIcon name="grid" /></div><div style={{flex:1}}><div className="pt">Все категории</div><div className="ps">Открыты все темы</div></div><span className="check-ic"><MiniIcon name="check" /></span></div>
+        </div>
+        <button className="btn btn-outline wide" disabled={busy} onClick={() => void cancelSubscription()}>
+          Управление подпиской
         </button>
       </main>
     );
@@ -2105,38 +2420,52 @@ function PremiumScreen({
 
   return (
     <main className="full-screen-view premium-screen">
-      <button className="quiet-action back-button" onClick={onBack}>Назад</button>
-      <section className="stats-hero premium-hero">
-        <div>
-          <p>Wordy Premium</p>
-          <h2>{categoryLockedPrompt ? "Эта категория доступна в Premium" : "Занимайтесь без ограничений"}</h2>
-          <span>{categoryLockedPrompt ? "Оформите Premium, чтобы открыть все категории." : "Выберите тариф, чтобы открыть все возможности."}</span>
-        </div>
-      </section>
+      <div className="row" style={{marginBottom:16}}>
+        <button className="quiet-action back-button" style={{marginBottom:0}} onClick={onBack}>Назад</button>
+        <span className="badge gold" style={{marginLeft:"auto"}}><MiniIcon name="gem" />Premium</span>
+      </div>
+      <div className="prem-hero-card mb12">
+        <span style={{color:"var(--gold)",width:52,height:52,display:"inline-flex",margin:"0 auto"}}><MiniIcon name="gem" /></span>
+        <div className="kbd-w" style={{fontWeight:800,fontSize:26,color:"var(--txt)",marginTop:8}}>Wordy <span style={{color:"var(--gold)"}}>Premium</span></div>
+        <p className="muted" style={{fontSize:14,marginTop:6}}>{categoryLockedPrompt ? "Открой платные категории и учись без ограничений." : "Учись без границ. Открой весь словарь и все игры."}</p>
+      </div>
       {categoryLockedPrompt && (
-        <section className="premium-lock-card">
+        <section className="premium-lock-card mb12">
           <strong>🔒 Premium категория</strong>
           <p>Оформите Premium, чтобы открыть все категории.</p>
-          <button className="wide premium-action" disabled={busy || !plans} onClick={() => void openPayment("monthly")}>Открыть Premium</button>
         </section>
       )}
-      <section className="premium-active-summary">
-        <p>Текущий статус: <strong>{subscription.is_premium ? "Активен" : "Free"}</strong></p>
-        <p>Тариф: <strong>{subscription.is_premium ? planTariffLabel(subscription.plan) : "не выбран"}</strong></p>
-      </section>
-      <section className="premium-benefits">
-        <div><strong>Безлимитное обучение</strong><span>Без дневного ограничения на слова.</span></div>
-        <div><strong>Безлимитные игры</strong><span>Играйте в Wordy сколько хотите.</span></div>
-        <div><strong>Все категории</strong><span>Открыты все темы и расширенная статистика.</span></div>
-      </section>
+      <div className="card mb12" style={{padding:"4px 18px"}}>
+        <div className="prem-feat">
+          <div className="pi"><MiniIcon name="refresh" /></div>
+          <div style={{flex:1}}><div className="pt">Безлимитное обучение</div><div className="ps">Без дневного лимита слов</div></div>
+          <span className="check-ic"><MiniIcon name="check" /></span>
+        </div>
+        <div className="prem-feat">
+          <div className="pi"><MiniIcon name="bolt" /></div>
+          <div style={{flex:1}}><div className="pt">Безлимитные игры</div><div className="ps">Wordy без ограничений</div></div>
+          <span className="check-ic"><MiniIcon name="check" /></span>
+        </div>
+        <div className="prem-feat">
+          <div className="pi"><MiniIcon name="grid" /></div>
+          <div style={{flex:1}}><div className="pt">Все категории</div><div className="ps">Открыты все темы</div></div>
+          <span className="check-ic"><MiniIcon name="check" /></span>
+        </div>
+        <div className="prem-feat">
+          <div className="pi"><MiniIcon name="chart" /></div>
+          <div style={{flex:1}}><div className="pt">Расширенная статистика</div><div className="ps">Графики и прогноз прогресса</div></div>
+          <span className="check-ic"><MiniIcon name="check" /></span>
+        </div>
+      </div>
       <section className="plan-grid">
         <PlanCard title="Premium на месяц" price={`${plans?.monthly.price_stars ?? 99} Stars / месяц`} onPay={() => void openPayment("monthly")} disabled={busy || !plans} />
         <PlanCard title="Premium на год" price={`${plans?.yearly.price_stars ?? 799} Stars / год`} badge="Выгодно" onPay={() => void openPayment("yearly")} disabled={busy || !plans} />
       </section>
+      <p className="muted3" style={{textAlign:"center",fontSize:12,marginTop:12}}>Отмена в любой момент · оплата через Telegram Stars</p>
       {plans?.fake_payments_enabled && (
-        <section className="plan-grid">
-          <PlanCard title="Dev Premium на месяц" price="Fake payment" onPay={() => void createFakePayment("monthly")} disabled={busy} />
-          <PlanCard title="Dev Premium на год" price="Fake payment" onPay={() => void createFakePayment("yearly")} disabled={busy} />
+        <section className="plan-grid" style={{marginTop:12}}>
+          <PlanCard title="Dev месяц" price="Fake payment" onPay={() => void createFakePayment("monthly")} disabled={busy} />
+          <PlanCard title="Dev год" price="Fake payment" onPay={() => void createFakePayment("yearly")} disabled={busy} />
         </section>
       )}
     </main>
@@ -2156,31 +2485,48 @@ function PlanCard({ title, price, badge, disabled, onPay }: { title: string; pri
   );
 }
 
+function AccuracyDonut({ pct }: { pct: number }) {
+  const r = 30, c = 2 * Math.PI * r, off = c * (1 - pct / 100);
+  return (
+    <svg width="76" height="76" viewBox="0 0 76 76" style={{flexShrink:0}}>
+      <circle cx="38" cy="38" r={r} fill="none" stroke="var(--line-2)" strokeWidth="8" />
+      <circle cx="38" cy="38" r={r} fill="none" stroke="var(--green)" strokeWidth="8" strokeLinecap="round"
+        strokeDasharray={c} strokeDashoffset={off} transform="rotate(-90 38 38)" />
+      <text x="38" y="43" textAnchor="middle" fontFamily="Unbounded" fontWeight="800" fontSize="17" fill="var(--txt)">{pct}%</text>
+    </svg>
+  );
+}
+
 function StatsView({ refreshKey, subscription }: { refreshKey: number; subscription: Subscription }) {
   const [stats, setStats] = useState<Stats | null>(null);
   useEffect(() => {
     api<Stats>("/stats/me").then(setStats);
   }, [refreshKey]);
   if (!stats) return <main className="comfort-copy">Загружаем статистику...</main>;
+  const days = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
   return (
     <main>
-      <section className="stats-hero">
+      <section className="apphead">
         <div>
-          <p>Прогресс</p>
-          <h2>Статистика</h2>
-          <span>Все показатели привязаны к вашему Telegram аккаунту.</span>
-          {subscription.is_premium && <div className="premium-badge">Premium</div>}
+          <div className="eyebrow">Statistika</div>
+          <h1>Статистика</h1>
         </div>
+        {subscription.is_premium && <span className="badge gold"><MiniIcon name="gem" />PRO</span>}
       </section>
-      <section className="accuracy-card">
-        <div className="accuracy-card-header">
-          <span>Средняя точность</span>
-          <strong>{stats.average_accuracy}%</strong>
-        </div>
-        <ProgressBar value={stats.average_accuracy} />
-        <div className="accuracy-breakdown">
-          <span>Правильно: <strong>{stats.correct_answers}</strong></span>
-          <span>Ошибки: <strong>{stats.wrong_answers}</strong></span>
+      <div className="mgrid mb12" style={{gridTemplateColumns:"1fr 1fr"}}>
+        <div className="mtile"><div className="ic" style={{color:"var(--lime)"}}><MiniIcon name="cards" /></div><div className="v">{stats.learned_words_count}</div><div className="k">Изучено слов</div></div>
+        <div className="mtile"><div className="ic"><MiniIcon name="refresh" /></div><div className="v">{stats.reviewed_words_count}</div><div className="k">Повторено</div></div>
+        <div className="mtile"><div className="ic" style={{color:"var(--gold)"}}><MiniIcon name="bolt" /></div><div className="v">{stats.games_played}</div><div className="k">Сыграно игр</div></div>
+        <div className="mtile"><div className="ic" style={{color:"var(--gold)"}}><MiniIcon name="trophy" /></div><div className="v">{stats.best_score}</div><div className="k">Лучший счёт</div></div>
+      </div>
+      <section className="card mb12">
+        <div className="acc-donut-row">
+          <div className="acc-donut-info">
+            <div className="ey">Точность ответов</div>
+            <div className="acc-donut-pct">{stats.average_accuracy}%</div>
+            <div className="muted3 acc-donut-sub">Правильно: {stats.correct_answers} · Ошибки: {stats.wrong_answers}</div>
+          </div>
+          <AccuracyDonut pct={stats.average_accuracy} />
         </div>
       </section>
       <section className="stats-grid">
@@ -2319,19 +2665,19 @@ type AdminUser = {
 };
 
 const ADMIN_TOKEN_KEY = "wordy_admin_token";
-const ADMIN_NAV: Array<{ id: AdminPage; label: string }> = [
-  { id: "overview", label: "Обзор" },
-  { id: "users", label: "Пользователи" },
-  { id: "activity", label: "Активность" },
-  { id: "learning", label: "Обучение" },
-  { id: "wordy", label: "Wordy" },
-  { id: "subscriptions", label: "Подписки" },
-  { id: "payments", label: "Платежи" },
-  { id: "content", label: "Контент" },
-  { id: "categories", label: "Категории" },
-  { id: "admins", label: "Администраторы" },
-  { id: "logs", label: "Логи" },
-  { id: "settings", label: "Настройки" },
+const ADMIN_NAV: Array<{ id: AdminPage; label: string; icon: MiniIconName; group: string }> = [
+  { id: "overview", label: "Обзор", icon: "grid", group: "Обзор" },
+  { id: "users", label: "Пользователи", icon: "profile", group: "Обзор" },
+  { id: "activity", label: "Активность", icon: "chart", group: "Обзор" },
+  { id: "learning", label: "Обучение", icon: "learn", group: "Обучение" },
+  { id: "wordy", label: "Wordy", icon: "bolt", group: "Обучение" },
+  { id: "content", label: "Контент", icon: "cards", group: "Обучение" },
+  { id: "categories", label: "Категории", icon: "grid", group: "Обучение" },
+  { id: "subscriptions", label: "Подписки", icon: "gem", group: "Монетизация" },
+  { id: "payments", label: "Платежи", icon: "star", group: "Монетизация" },
+  { id: "admins", label: "Администраторы", icon: "lock", group: "Система" },
+  { id: "logs", label: "Логи", icon: "clock", group: "Система" },
+  { id: "settings", label: "Настройки", icon: "target", group: "Система" },
 ];
 
 function adminAuthHeaders(): Record<string, string> {
@@ -2393,39 +2739,59 @@ function AdminApp() {
   if (!authorized) return <AdminLogin onLoggedIn={() => setAuthorized(true)} />;
 
   return (
-    <div className="admin-shell">
-      <aside className="admin-sidebar">
-        <div className="admin-brand">
-          <p className="eyebrow">Wordy</p>
-          <h1>Admin</h1>
+    <div className="admin-shell admin">
+      <aside className="admin-sidebar sidebar">
+        <div className="admin-brand sb-brand">
+          <img src="/wordy-icon.svg" alt="" />
+          <div className="bcol">
+            <span className="bt">Wordy</span>
+            <span className="bs">Admin panel</span>
+          </div>
         </div>
-        <nav className="admin-nav">
-          {ADMIN_NAV.map((item) => (
-            <button key={item.id} className={page === item.id ? "active" : ""} onClick={() => navigate(item.id)}>
-              {item.label}
-            </button>
+        <nav className="admin-nav sb-nav">
+          {["Обзор", "Обучение", "Монетизация", "Система"].map((group) => (
+            <div key={group}>
+              <div className="sb-group">{group}</div>
+              {ADMIN_NAV.filter((item) => item.group === group).map((item) => (
+                <button key={item.id} className={`nav-i ${page === item.id ? "active on" : ""}`} onClick={() => navigate(item.id)}>
+                  <MiniIcon name={item.icon} />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
+        <div className="sb-foot">
+          <div className="sb-user">
+            <span className="av">{identity.slice(0, 2).toUpperCase() || "SA"}</span>
+            <div>
+              <div className="nm">{identity || "secret-admin"}</div>
+              <div className="rl">Super admin</div>
+            </div>
+          </div>
+        </div>
       </aside>
-      <main className="admin-main">
+      <main className="admin-main main">
         <AdminTopbar
           identity={identity}
           search={globalSearch}
           onSearch={setGlobalSearch}
           onRefresh={() => setRefreshKey((value) => value + 1)}
         />
-        {page === "overview" && <AdminOverview refreshKey={refreshKey} />}
-        {page === "users" && (selectedUserId ? <AdminUserDetail userId={selectedUserId} onBack={() => navigate("users")} refreshKey={refreshKey} /> : <AdminUsers onOpen={(id) => navigate("users", id)} globalSearch={globalSearch} refreshKey={refreshKey} />)}
-        {page === "activity" && <AdminActivity refreshKey={refreshKey} />}
-        {page === "learning" && <AdminLearning refreshKey={refreshKey} />}
-        {page === "wordy" && <AdminWordy refreshKey={refreshKey} />}
-        {page === "subscriptions" && <AdminSubscriptions refreshKey={refreshKey} />}
-        {page === "payments" && <AdminPayments refreshKey={refreshKey} globalSearch={globalSearch} />}
-        {page === "content" && <AdminContent refreshKey={refreshKey} />}
-        {page === "categories" && <AdminCategories refreshKey={refreshKey} />}
-        {page === "admins" && <AdminAdmins refreshKey={refreshKey} />}
-        {page === "logs" && <AdminLogs refreshKey={refreshKey} />}
-        {page === "settings" && <AdminSettings refreshKey={refreshKey} />}
+        <div className="content">
+          {page === "overview" && <AdminOverview refreshKey={refreshKey} />}
+          {page === "users" && (selectedUserId ? <AdminUserDetail userId={selectedUserId} onBack={() => navigate("users")} refreshKey={refreshKey} /> : <AdminUsers onOpen={(id) => navigate("users", id)} globalSearch={globalSearch} refreshKey={refreshKey} />)}
+          {page === "activity" && <AdminActivity refreshKey={refreshKey} />}
+          {page === "learning" && <AdminLearning refreshKey={refreshKey} />}
+          {page === "wordy" && <AdminWordy refreshKey={refreshKey} />}
+          {page === "subscriptions" && <AdminSubscriptions refreshKey={refreshKey} />}
+          {page === "payments" && <AdminPayments refreshKey={refreshKey} globalSearch={globalSearch} />}
+          {page === "content" && <AdminContent refreshKey={refreshKey} />}
+          {page === "categories" && <AdminCategories refreshKey={refreshKey} />}
+          {page === "admins" && <AdminAdmins refreshKey={refreshKey} />}
+          {page === "logs" && <AdminLogs refreshKey={refreshKey} />}
+          {page === "settings" && <AdminSettings refreshKey={refreshKey} />}
+        </div>
       </main>
     </div>
   );
@@ -2479,13 +2845,14 @@ function AdminTopbar({
   onRefresh: () => void;
 }) {
   return (
-    <header className="admin-topbar">
-      <div className="admin-search">
+    <header className="admin-topbar topbar">
+      <div className="admin-search search">
+        <MiniIcon name="grid" />
         <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Поиск по админке, пользователям, платежам" />
       </div>
-      <span className="admin-env">Production</span>
+      <span className="admin-env env"><span className="dt" />Production</span>
       <span className="admin-identity">{identity || "admin"}</span>
-      <button className="soft-action" onClick={onRefresh}>Обновить</button>
+      <button className="btn btn-ghost sm" onClick={onRefresh}><MiniIcon name="refresh" />Обновить</button>
     </header>
   );
 }

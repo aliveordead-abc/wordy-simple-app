@@ -1,0 +1,5 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wordy">
+  <rect x="2" y="2" width="60" height="60" rx="18" fill="#2B5CFF"></rect>
+  <path d="M15 20 L23 44 L32 30 L41 44 L49 20" fill="none" stroke="#FFFFFF" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"></path>
+  <path d="M49 11 C49.7 16.2 51.6 18.1 56.8 18.8 C51.6 19.5 49.7 21.4 49 26.6 C48.3 21.4 46.4 19.5 41.2 18.8 C46.4 18.1 48.3 16.2 49 11 Z" fill="#C8F94D"></path>
+</svg>
